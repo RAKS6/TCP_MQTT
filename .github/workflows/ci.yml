@@ -11,24 +11,42 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    # 1️⃣ Checkout repository
     - name: Checkout code
       uses: actions/checkout@v3
 
+    # 2️⃣ Install system dependencies
     - name: Install system dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y gcc build-essential cmake libpaho-mqtt-dev python3-pip
-        pip3 install pytest paho-mqtt
+        sudo apt-get install -y gcc build-essential libpaho-mqtt3c-dev python3-pip
+        pip3 install --upgrade pytest paho-mqtt
 
-    - name: Build C Server
+    # 3️⃣ List files (for debug)
+    - name: List repo files
+      run: ls -l
+
+    # 4️⃣ Build C Server and Clients
+    - name: Build C server and clients
       run: |
         gcc server.c mqtt.c -o server -lpaho-mqtt3c -lpthread
         gcc client.c -o client
         gcc client2.c -o client2
 
-    - name: Run Python Tests
+    # 5️⃣ Start TCP server in background
+    - name: Start TCP server
       run: |
-        pytest test_tcp.py -v
+        ./server &
+        SERVER_PID=$!
+        echo "Server PID: $SERVER_PID"
+        sleep 2   # wait for server to be ready
+        echo $SERVER_PID > server.pid
 
-    - name: List files
-      run: ls -l
+    # 6️⃣ Run Python tests
+    - name: Run Python tests
+      run: pytest test_tcp.py -v
+
+    # 7️⃣ Stop TCP server after tests
+    - name: Stop TCP server
+      run: |
+        kill $(cat server.pid) || true
