@@ -15,18 +15,14 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    # 2️⃣ List all files recursively (debug)
-    - name: List all files
-      run: ls -R
-
-    # 3️⃣ Install system dependencies
-    - name: Install system dependencies
+    # 2️⃣ Install system dependencies
+    - name: Install dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y gcc build-essential cmake git python3-pip
         pip3 install --upgrade pytest paho-mqtt
 
-    # 4️⃣ Build and install Eclipse Paho MQTT C library
+    # 3️⃣ Build and install Eclipse Paho MQTT C library
     - name: Build Paho MQTT C library
       run: |
         git clone https://github.com/eclipse/paho.mqtt.c.git
@@ -36,31 +32,33 @@ jobs:
         sudo ldconfig
         cd ..
 
+    # 4️⃣ List repo files for debugging
+    - name: List all repo files
+      run: ls -R
+
     # 5️⃣ Build C server and clients
-    - name: Build C server and clients
+    - name: Build server and clients
       run: |
         gcc project/server.c project/mqtt.c -o server -lpaho-mqtt3c -lpthread
         gcc project/client.c -o client
         gcc project/client2.c -o client2
 
-    # 6️⃣ Patch Python test for new paho-mqtt API
-    - name: Patch test_tcp.py MQTT client constructor
-      run: |
-        sed -i 's/mqtt\.Client("TestSubscriber")/mqtt.Client(client_id="TestSubscriber")/' project/test_tcp.py
-
-    # 7️⃣ Start TCP server in background
+    # 6️⃣ Start TCP server in the background
     - name: Start TCP server
       run: |
         ./server &
         SERVER_PID=$!
         echo $SERVER_PID > server.pid
-        sleep 2  # wait for server to be ready
+        echo "Server started with PID $SERVER_PID"
+        sleep 2  # give server time to start
 
-    # 8️⃣ Run Python tests
+    # 7️⃣ Run Python tests (with enhanced logging)
     - name: Run Python tests
-      run: pytest project/test_tcp.py -v
+      run: |
+        pytest project/test_tcp.py -v --maxfail=1 --disable-warnings
 
-    # 9️⃣ Stop TCP server after tests
+    # 8️⃣ Stop TCP server after tests
     - name: Stop TCP server
       run: |
         kill $(cat server.pid) || true
+        echo "Server stopped"
