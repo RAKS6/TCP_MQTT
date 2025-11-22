@@ -56,7 +56,7 @@ jobs:
 
     # 7️⃣ Run Python tests
     - name: Run Python tests
-      run: pytest test_tcp.py -v
+      run: pytest project/test_tcp.py -v
 
     # 8️⃣ Stop TCP server after tests
     - name: Stop TCP server
