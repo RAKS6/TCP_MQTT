@@ -19,34 +19,43 @@ jobs:
     - name: Install system dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y gcc build-essential libpaho-mqtt3c-dev python3-pip
+        sudo apt-get install -y gcc build-essential cmake git python3-pip
         pip3 install --upgrade pytest paho-mqtt
 
-    # 3️⃣ List files (for debug)
+    # 3️⃣ Build and install Eclipse Paho MQTT C library
+    - name: Build Paho MQTT C library
+      run: |
+        git clone https://github.com/eclipse/paho.mqtt.c.git
+        cd paho.mqtt.c
+        cmake -Bbuild -H. -DPAHO_WITH_SSL=OFF
+        sudo cmake --build build/ --target install
+        sudo ldconfig
+        cd ..
+
+    # 4️⃣ List repo files (optional debug)
     - name: List repo files
       run: ls -l
 
-    # 4️⃣ Build C Server and Clients
+    # 5️⃣ Build C server and clients
     - name: Build C server and clients
       run: |
         gcc server.c mqtt.c -o server -lpaho-mqtt3c -lpthread
         gcc client.c -o client
         gcc client2.c -o client2
 
-    # 5️⃣ Start TCP server in background
+    # 6️⃣ Start TCP server in background
     - name: Start TCP server
       run: |
         ./server &
         SERVER_PID=$!
-        echo "Server PID: $SERVER_PID"
-        sleep 2   # wait for server to be ready
         echo $SERVER_PID > server.pid
+        sleep 2  # wait for server to be ready
 
-    # 6️⃣ Run Python tests
+    # 7️⃣ Run Python tests
     - name: Run Python tests
       run: pytest test_tcp.py -v
 
-    # 7️⃣ Stop TCP server after tests
+    # 8️⃣ Stop TCP server after tests
     - name: Stop TCP server
       run: |
         kill $(cat server.pid) || true
