@@ -42,9 +42,9 @@ jobs:
     # 5️⃣ Build C server and clients
     - name: Build C server and clients
       run: |
-        gcc server.c mqtt.c -o server -lpaho-mqtt3c -lpthread
-        gcc client.c -o client
-        gcc client2.c -o client2
+        gcc project/server.c project/mqtt.c -o server -lpaho-mqtt3c -lpthread
+        gcc project/client.c -o client
+        gcc project/client2.c -o client2
 
     # 6️⃣ Start TCP server in background
     - name: Start TCP server
