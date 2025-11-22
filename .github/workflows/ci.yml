@@ -1,4 +1,4 @@
-name: CI Pipeline
+name: CI Build & Test
 
 on:
   push:
@@ -9,39 +9,26 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
 
     steps:
-    - name: Checkout Code
+    - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Install Dependencies
+    - name: Install system dependencies
       run: |
-        sudo apt update
-        sudo apt install -y build-essential gcc g++ make libpaho-mqtt3c-dev python3-pip
+        sudo apt-get update
+        sudo apt-get install -y gcc build-essential cmake libpaho-mqtt-dev python3-pip
         pip3 install pytest paho-mqtt
 
-    - name: Compile Server
+    - name: Build C Server
       run: |
         gcc server.c mqtt.c -o server -lpaho-mqtt3c -lpthread
-
-    - name: Compile Clients
-      run: |
         gcc client.c -o client
         gcc client2.c -o client2
 
-    - name: Start TCP Server in background
-      run: |
-        ./server &
-        echo $! > server_pid.txt
-      shell: bash
-
-    - name: Wait for Server to start
-      run: sleep 2
-
     - name: Run Python Tests
-      run: pytest test_tcp.py -v
-
-    - name: Stop TCP Server
       run: |
-        kill $(cat server_pid.txt)
+        pytest test_tcp.py -v
+
+    - name: List files
+      run: ls -l
